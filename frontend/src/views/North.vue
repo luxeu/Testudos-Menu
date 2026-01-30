@@ -1,20 +1,12 @@
 <template>
-  <div class="page">
-    <router-link to="/" class="back-link">← Back to Home</router-link>
-    <h1>251 North Dining Hall</h1>
-    <p>Loading menu...</p>
-  </div>
+  <DiningHallView locationId="251 North" displayName="251 North" :imageSrc="mapImg" :coordinates="northData"
+    viewBox="0 0 1311 1273" />
 </template>
 
-<style scoped>
-.page {
-  padding: 20px;
-  color: black
-}
+<script setup>
+import DiningHallView from '../views/DiningHallView.vue';
+// import { northCoordinates } from '../data/northMappings';
+import mapImg from '../assets/251-north-map.png';
 
-.back-link {
-  color: #555;
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-</style>
+const northData = {};
+</script>

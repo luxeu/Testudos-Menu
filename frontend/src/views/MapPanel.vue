@@ -1,10 +1,10 @@
 <template>
     <div class="map-container">
-        <img src="..\assets\yahentamitsi-map.png" alt="Map" class="map-image" />
+        <img :src="imageSrc" alt="Map" class="map-image" />
 
-        <svg viewBox="0 0 3180 2079" class="map-overlay">
+        <svg :viewBox="viewBox" class="map-overlay">
 
-            <polygon v-for="(coords, name) in mappings" :key="name" :points="coords" class="station-zone"
+            <polygon v-for="(coords, name) in coordinates" :key="name" :points="coords" class="station-zone"
                 :class="{ 'active': activeStations.includes(name) }">
                 <title>{{ name }}</title>
             </polygon>
@@ -14,14 +14,16 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
 import { yStationCoordinates } from '../views/mappings/YMapping.js';
 
 const props = defineProps({
     activeStations: {
         type: Array,
         default: () => []
-    }
+    },
+    imageSrc: { type: String, required: true },
+    coordinates: Object,
+    viewBox: String
 });
 
 const mappings = yStationCoordinates;
