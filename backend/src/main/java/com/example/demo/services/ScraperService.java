@@ -14,11 +14,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class ScraperService {
     private final MenuRepository menuRepository;
     private final FoodItemRepository foodItemRepository;
+
+    private final Pattern CALORIE_PATTERN = Pattern.compile("Calories\\D*(\\d+(?:\\.\\d+)?)");
+    private final Pattern FAT_PATTERN = Pattern.compile("Fat\\D*(\\d+(?:\\.\\d+)?)");
+    private final Pattern PROTEIN_PATTERN = Pattern.compile("Protein\\D*(\\d+(?:\\.\\d+)?)");
+    private final Pattern CARB_PATTERN = Pattern.compile("Carbohydrates\\D*(\\d+(?:\\.\\d+)?)");
+    private final Pattern SODIUM_PATTERN = Pattern.compile("Sodium\\D*(\\d+(?:\\.\\d+)?)");
 
     public ScraperService(MenuRepository menuRepository, FoodItemRepository foodItemRepository) {
         this.menuRepository = menuRepository;
@@ -69,11 +77,28 @@ public class ScraperService {
                     List<FoodItem> stationFoods = new ArrayList<>();
 
                     // Find all items in this card
-                    Elements foodLinks = card.select("a.menu-item-name");
+                    Elements rows = card.select(".menu-item-row");
+                    for (Element row : rows) {
+                        Element link = row.selectFirst(".menu-item-name");
+                        if (link == null)
+                            continue;
 
-                    for (Element link : foodLinks) {
+                        String itemName = link.text();
                         String itemUrl = baseUrl + link.attr("href");
-                        FoodItem item = getOrCreateFoodItem(link.text(), itemUrl);
+
+                        List<String> allergens = new ArrayList<>();
+                        Elements icons = row.select("img.nutri-icon");
+                        for (Element icon : icons) {
+                            String title = icon.attr("title");
+                            if (title.isEmpty())
+                                title = icon.attr("alt");
+
+                            if (!title.isEmpty()) {
+                                allergens.add(title.replace("Contains ", "").trim().toLowerCase());
+                            }
+                        }
+
+                        FoodItem item = getOrCreateFoodItem(itemName, itemUrl, allergens);
                         if (item != null) {
                             stationFoods.add(item);
                         }
@@ -85,11 +110,13 @@ public class ScraperService {
                     }
                 }
 
+                // Save Menu
                 if (!stationsList.isEmpty()) {
                     menu.setStations(stationsList);
                     menuRepository.save(menu);
                     System.out.println("Saved " + mealPeriodName + " with " + stationsList.size() + " stations.");
                 }
+
             }
 
         } catch (Exception e) {
@@ -97,7 +124,7 @@ public class ScraperService {
         }
     }
 
-    private FoodItem getOrCreateFoodItem(String name, String url) {
+    private FoodItem getOrCreateFoodItem(String name, String url, List<String> allergens) {
         // Check DB first to avoid re-scraping
         Optional<FoodItem> existing = foodItemRepository.findByName(name);
         if (existing.isPresent()) {
@@ -110,23 +137,18 @@ public class ScraperService {
 
             FoodItem newItem = new FoodItem();
             newItem.setName(name);
+            newItem.setAllergens(allergens);
 
             // Scrape Strings
-            String rawCal = doc.select(".calories-value").text(); // "120"
-            String rawFat = doc.select(".total-fat-value").text(); // "14g"
-            String rawSod = doc.select(".sodium-value").text(); // "540mg"
-            String rawPro = doc.select(".protein-value").text(); // "20 g"
-            String rawCarb = doc.select(".carb-value").text(); // "30g"
+            String fullText = doc.body().text();
 
-            newItem.setCalories(parseToGrams(rawCal));
-            newItem.setTotalFat(parseToGrams(rawFat));
-            newItem.setSodium(parseToGrams(rawSod));
-            newItem.setProtein(parseToGrams(rawPro));
-            newItem.setCarbs(parseToGrams(rawCarb));
+            newItem.setCalories(extractValue(CALORIE_PATTERN, fullText));
+            newItem.setTotalFat(extractValue(FAT_PATTERN, fullText));
+            newItem.setProtein(extractValue(PROTEIN_PATTERN, fullText));
+            newItem.setCarbs(extractValue(CARB_PATTERN, fullText));
 
-            // Scrape Allergens
-            List<String> allergens = doc.select("img.allergen-icon").eachAttr("alt");
-            newItem.setAllergens(allergens);
+            Double sodiumMg = extractValue(SODIUM_PATTERN, fullText);
+            newItem.setSodium(sodiumMg / 1000.0);
 
             return foodItemRepository.save(newItem);
 
@@ -136,25 +158,15 @@ public class ScraperService {
         }
     }
 
-    private Double parseToGrams(String rawValue) {
-        if (rawValue == null || rawValue.isEmpty())
-            return 0.0;
-
-        String numberOnly = rawValue.replaceAll("[^0-9.]", "");
-        if (numberOnly.isEmpty())
-            return 0.0;
-
-        try {
-            double val = Double.parseDouble(numberOnly);
-
-            // If "mg"
-            if (rawValue.toLowerCase().contains("mg")) {
-                return val / 1000.0;
+    private Double extractValue(Pattern pattern, String text) {
+        Matcher matcher = pattern.matcher(text);
+        if (matcher.find()) {
+            try {
+                return Double.parseDouble(matcher.group(1));
+            } catch (NumberFormatException e) {
+                return 0.0;
             }
-
-            return val;
-        } catch (NumberFormatException e) {
-            return 0.0;
         }
+        return 0.0;
     }
 }
