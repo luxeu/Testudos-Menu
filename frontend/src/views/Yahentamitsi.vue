@@ -95,6 +95,9 @@
         </div>
 
       </div>
+
+      <MapPanel :activeStations="highlightedStationNames" />
+
       <div class="main-content"></div>
 
     </div>
@@ -104,6 +107,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
+import MapPanel from '../views/MapPanel.vue';
 
 // --- STATE ---
 const menuData = ref([]);
@@ -165,7 +169,24 @@ const filteredMenu = computed(() => {
     return { ...menu, stations: filteredStations };
   }).filter(menu => menu.stations.length > 0);
 });
+
+// --- MAP ---
+const highlightedStationNames = computed(() => {
+  const names = new Set();
+
+  filteredMenu.value.forEach(meal => {
+    meal.stations.forEach(station => {
+      if (station.items.length > 0) {
+        names.add(station.stationName);
+      }
+    });
+  });
+
+  return Array.from(names);
+});
+
 </script>
+
 
 <style scoped>
 /* --- PAGE LAYOUT --- */
@@ -181,7 +202,7 @@ const filteredMenu = computed(() => {
 }
 
 .top-bar {
-  background: #e21833;
+  background: #000000;
   color: white;
   padding: 0 20px;
   display: flex;
