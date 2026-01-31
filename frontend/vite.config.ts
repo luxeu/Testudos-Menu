@@ -10,6 +10,7 @@ export default defineConfig({
     vue(),
     vueDevTools(),
   ],
+  base: '/Testudos-Menu/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

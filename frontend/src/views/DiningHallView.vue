@@ -132,6 +132,8 @@ const selectedItem = ref(null);
 
 // --- FETCH DATA ---
 onMounted(async () => {
+    const API_URL = import.meta.env.PROD ? 'https://testudos-menu.onrender.com/' : 'http://localhost:8080/api/menus';
+
     try {
         const date = new Date();
         const options = {
@@ -143,7 +145,7 @@ onMounted(async () => {
 
         const today = new Intl.DateTimeFormat('en-US', options).format(date);
 
-        const response = await axios.get(`http://localhost:8080/api/menus`, {
+        const response = await axios.get(API_URL, {
             params: { date: today, location: props.locationId }
         });
         menuData.value = response.data;
