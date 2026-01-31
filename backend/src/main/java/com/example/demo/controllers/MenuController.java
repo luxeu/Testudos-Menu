@@ -4,7 +4,6 @@ import com.example.demo.models.DiningMenu;
 import com.example.demo.repositories.MenuRepository;
 import com.example.demo.services.ScraperService;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController

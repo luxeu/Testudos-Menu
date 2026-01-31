@@ -97,7 +97,8 @@
 
             </div>
 
-            <MapPanel :activeStations="highlightedStationNames" :imageSrc="imageSrc" :coordinates="coordinates" :viewBox="viewBox" />
+            <MapPanel :activeStations="highlightedStationNames" :imageSrc="imageSrc" :coordinates="coordinates"
+                :viewBox="viewBox" />
 
             <div class="main-content"></div>
 
@@ -132,7 +133,16 @@ const selectedItem = ref(null);
 // --- FETCH DATA ---
 onMounted(async () => {
     try {
-        const today = "1/29/2026";
+        const date = new Date();
+        const options = {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            timeZone: 'America/New_York'
+        };
+
+        const today = new Intl.DateTimeFormat('en-US', options).format(date);
+
         const response = await axios.get(`http://localhost:8080/api/menus`, {
             params: { date: today, location: props.locationId }
         });
