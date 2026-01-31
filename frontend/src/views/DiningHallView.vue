@@ -132,7 +132,7 @@ const selectedItem = ref(null);
 
 // --- FETCH DATA ---
 onMounted(async () => {
-    const API_URL = import.meta.env.PROD ? 'https://testudos-menu.onrender.com/' : 'http://localhost:8080/api/menus';
+    const API_URL = import.meta.env.PROD ? 'https://testudos-menu.onrender.com/api/menus' : 'http://localhost:8080/api/menus';
 
     try {
         const date = new Date();
